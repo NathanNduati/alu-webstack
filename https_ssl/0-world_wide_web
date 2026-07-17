@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Explores and displays DNS subdomain records using dig and awk
+
+domain=$1
+subdomain=$2
+
+# Bash function to audit a specific subdomain
+audit_subdomain() {
+    local sub=$1
+    local dom=$2
+    local dns_output
+    
+    # Run dig to extract the answer line
+    dns_output=$(dig "${sub}.${dom}" +nocmd +noall +answer | head -n 1)
+    
+    # Use awk to extract the 4th (record type) and 5th (destination) fields
+    local record_type
+    record_type=$(echo "${dns_output}" | awk '{print $4}')
+    local destination
+    destination=$(echo "${dns_output}" | awk '{print $5}')
+    
+    echo "The subdomain ${sub} is a ${record_type} record and points to ${destination}"
+}
+
+# Check if a specific subdomain was provided or if we loop through the defaults
+if [ -z "${subdomain}" ]; then
+    audit_subdomain "www" "${domain}"
+    audit_subdomain "lb-01" "${domain}"
+    audit_subdomain "web-01" "${domain}"
+    audit_subdomain "web-02" "${domain}"
+else
+    audit_subdomain "${subdomain}" "${domain}"
+fi
