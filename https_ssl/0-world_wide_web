@@ -1,33 +1,27 @@
 #!/usr/bin/env bash
-# Explores and displays DNS subdomain records using dig and awk
+# Audits subdomains of a given domain using dig and awk
 
-domain=$1
-subdomain=$2
+# Script arguments
+DOMAIN=$1
+SUBDOMAIN=$2
 
-# Bash function to audit a specific subdomain
+# Function to query and display subdomain info
 audit_subdomain() {
     local sub=$1
     local dom=$2
-    local dns_output
     
-    # Using the exact dig structure from the assignment example
-    dns_output=$(dig "${sub}.${dom}" | grep -A1 'ANSWER SECTION:' | tail -n 1)
-    
-    # Use awk to safely pull the record type and destination fields
-    local record_type
-    record_type=$(echo "${dns_output}" | awk '{print $4}')
-    local destination
-    destination=$(echo "${dns_output}" | awk '{print $5}')
-    
-    echo "The subdomain ${sub} is a ${record_type} record and points to ${destination}"
+    # Run dig, extract the answer line, and format output using awk
+    # shellcheck disable=SC2086
+    dig "${sub}.${dom}" | grep -A1 'ANSWER SECTION:' | tail -n 1 | awk -v s="$sub" '{print "The subdomain " s " is a " $4 " record and points to " $5}'
 }
 
-# Check if a specific subdomain was provided or loop through defaults
-if [ -z "${subdomain}" ]; then
-    audit_subdomain "www" "${domain}"
-    audit_subdomain "lb-01" "${domain}"
-    audit_subdomain "web-01" "${domain}"
-    audit_subdomain "web-02" "${domain}"
+# Control flow based on arguments provided
+if [ -z "$SUBDOMAIN" ]; then
+    # Loop through the mandatory subdomains in their exact order
+    for sub in www lb-01 web-01 web-02; do
+        audit_subdomain "$sub" "$DOMAIN"
+    done
 else
-    audit_subdomain "${subdomain}" "${domain}"
+    # Audit only the single specified subdomain
+    audit_subdomain "$SUBDOMAIN" "$DOMAIN"
 fi
