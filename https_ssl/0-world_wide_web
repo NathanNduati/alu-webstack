@@ -10,10 +10,10 @@ audit_subdomain() {
     local dom=$2
     local dns_output
     
-    # Run dig to extract the answer line
-    dns_output=$(dig "${sub}.${dom}" +nocmd +noall +answer | head -n 1)
+    # Using the exact dig structure from the assignment example
+    dns_output=$(dig "${sub}.${dom}" | grep -A1 'ANSWER SECTION:' | tail -n 1)
     
-    # Use awk to extract the 4th (record type) and 5th (destination) fields
+    # Use awk to safely pull the record type and destination fields
     local record_type
     record_type=$(echo "${dns_output}" | awk '{print $4}')
     local destination
@@ -22,7 +22,7 @@ audit_subdomain() {
     echo "The subdomain ${sub} is a ${record_type} record and points to ${destination}"
 }
 
-# Check if a specific subdomain was provided or if we loop through the defaults
+# Check if a specific subdomain was provided or loop through defaults
 if [ -z "${subdomain}" ]; then
     audit_subdomain "www" "${domain}"
     audit_subdomain "lb-01" "${domain}"
