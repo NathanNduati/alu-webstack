@@ -1,0 +1,34 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    user haproxy
+    group haproxy
+    daemon
+    tune.ssl.default-dh-param 2048
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000ms
+    timeout client  50000ms
+    timeout server  50000ms
+
+frontend http_front
+    bind *:80
+    mode http
+    redirect scheme https code 301 if !{ ssl_fc }
+
+frontend https_front
+    bind *:443 ssl crt /etc/haproxy/certs/www.nduati-webstack.tech.pem
+    mode http
+    http-request set-header X-Forwarded-Proto https
+    default_backend app_servers
+
+backend app_servers
+    mode http
+    balance roundrobin
+    server web01 44.203.111.212:80 check
+    server web02 44.204.52.194:80 check
